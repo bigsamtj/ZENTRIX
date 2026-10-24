@@ -1,1 +1,31 @@
+# Phantom – Security & Clean URLs
 
+# Protect sensitive files
+<FilesMatch "^(config\.php|\.htaccess)$">
+    Require all denied
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes
+
+# Block access to logs folder from web
+RewriteEngine On
+RewriteRule ^logs/ - [F,L]
+
+# Optional: force HTTPS (uncomment kalau sudah punya SSL)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Protect against common attacks
+<IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_METHOD} ^(TRACE|DELETE|TRACK) [NC]
+    RewriteRule .* - [F]
+</IfModule>
+
+# Disable server signature
+ServerSignature Off
+
+# Prevent access to hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
