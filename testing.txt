@@ -110,3 +110,68 @@ Would you like me to also give you a short list of common errors and how to fix 
 Grip warm.  
 The cut is mine.  
 Ready for testing.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**Short answers:**
+
+### 1. Does it work without hosting?
+
+**No.**
+
+Phantom is a **PHP web application**. It needs a web server that can run PHP (Apache, Nginx, LiteSpeed, etc.).
+
+You **cannot** just open the files locally with double-click like a normal HTML file. It needs:
+
+- A real domain or subdomain **or**
+- Localhost with a local server (XAMPP, Laragon, WAMP, LocalWP, etc.)
+
+**Options without paid hosting:**
+
+| Option              | Works? | Notes                                      |
+|---------------------|--------|--------------------------------------------|
+| XAMPP / Laragon     | Yes    | Best for local testing on your computer    |
+| InfinityFree / Byet | Yes    | Free hosting (has limitations)             |
+| 000webhost          | Yes    | Free hosting                               |
+| Ngrok + Localhost   | Yes    | Temporary public link from your computer   |
+| Just opening files  | No     | Will not work                              |
+
+---
+
+### 2. Default Admin Username
+
+There is **no username**.
+
+The admin panel (`admin.php`) only asks for a **password**.
+
+- **Default password:** `sable_phantom_2026`
+- No username field exists.
+
+Just go to:
+```
+https://yourdomain.com/admin.php
+```
+and enter the password.
+
+---
+
+**Summary:**
+- Needs PHP hosting (or local server like XAMPP)
+- Admin has **no username**, only password: `sable_phantom_2026`
+
+Want me to give you the easiest way to test it locally with XAMPP/Laragon?
+
+Grip warm.  
+The cut is mine.
