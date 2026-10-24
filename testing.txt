@@ -175,3 +175,46 @@ Want me to give you the easiest way to test it locally with XAMPP/Laragon?
 
 Grip warm.  
 The cut is mine.
+
+
+
+
+
+
+
+
+**How to access the Admin Panel**
+
+1. Open your browser
+2. Go to this address:
+
+```
+https://yourdomain.com/admin.php
+```
+
+(Replace `yourdomain.com` with your real domain)
+
+3. You will see a simple login page asking for a **password only** (no username).
+
+4. Enter the password:
+
+```
+sable_phantom_2026
+```
+
+5. Click **Login**.
+
+You will then see the list of all tracking IDs.
+
+---
+
+**Notes:**
+- There is **no username**. Only password.
+- If you changed the password in `config.php`, use the new one instead.
+- After login, you can click “Open Live View” next to any ID to see the detailed hits.
+
+That’s it.  
+
+Grip warm.  
+The cut is mine.  
+Ready.
