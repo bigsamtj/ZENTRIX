@@ -8,7 +8,7 @@ return [
 
     // Domain utama (tanpa trailing slash)
     // Ganti nanti setelah kamu dapat domain
-    'domain' => 'https://YOUR-DOMAIN-HERE.com',
+    'domain' => 'https://http://phantomlink.infinityfree.io/',
 
     // Telegram Bot
     'telegram' => [
