@@ -1,20 +1,20 @@
 <?php
 /**
  * Phantom - Configuration
- * Ganti nilai di bawah sesuai milikmu
+ * Ready for deployment
  */
 
 return [
 
     // Domain utama (tanpa trailing slash)
-    // Contoh: https://phantom.yourdomain.com
-    'domain' => 'https://phantom.yourdomain.com',
+    // Ganti nanti setelah kamu dapat domain
+    'domain' => 'https://YOUR-DOMAIN-HERE.com',
 
     // Telegram Bot
     'telegram' => [
         'enabled'   => true,
-        'bot_token' => 'ISI_BOT_TOKEN_DARI_BOTFATHER',   // contoh: 7123456789:AAHxxxx
-        'chat_id'   => 'ISI_CHAT_ID_KAMU',               // contoh: 123456789 atau -100xxxxxxxxxx
+        'bot_token' => '8703136899:AAH8Uc6QlJqGoC_e18POb1NG4-SuSXmBc3M',
+        'chat_id'   => '5301735906',
     ],
 
     // Password untuk admin.php
