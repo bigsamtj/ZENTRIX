@@ -1,4 +1,4 @@
-# Phantom – Security & Clean URLs
+# Phantom v3 – Security & Clean URLs
 
 # Protect sensitive files
 <FilesMatch "^(config\.php|\.htaccess)$">
@@ -8,11 +8,19 @@
 # Prevent directory listing
 Options -Indexes
 
-# Block access to logs folder from web
+# Block direct access to log JSON files, but allow photos
 RewriteEngine On
-RewriteRule ^logs/ - [F,L]
 
-# Optional: force HTTPS (uncomment kalau sudah punya SSL)
+# Block all .json files inside logs/
+RewriteRule ^logs/.*\.json$ - [F,L]
+
+# Block the root of logs/ folder (optional extra safety)
+RewriteRule ^logs/?$ - [F,L]
+
+# Allow access to logs/photos/
+# (no rule needed – it will be allowed by default)
+
+# Optional: force HTTPS (uncomment if you have SSL)
 # RewriteCond %{HTTPS} off
 # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
