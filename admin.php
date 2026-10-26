@@ -1,6 +1,6 @@
 <?php
 /**
- * Phantom v3 – Admin Dashboard
+ * ZENTRIX v3 – Admin Dashboard
  * With photo count support
  */
 
@@ -8,7 +8,7 @@ session_start();
 $config = require __DIR__ . '/config.php';
 
 // Handle delete
-if (isset($_GET['delete']) && !empty($_SESSION['phantom_admin'])) {
+if (isset($_GET['delete']) && !empty($_SESSION['zentrix_admin'])) {
     $delId = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['delete']);
     $file = __DIR__ . '/logs/' . $delId . '.json';
     if (file_exists($file)) {
@@ -30,26 +30,26 @@ if (isset($_GET['delete']) && !empty($_SESSION['phantom_admin'])) {
 // ========== LOGIN ==========
 if (isset($_POST['password'])) {
     if ($_POST['password'] === $config['admin_password']) {
-        $_SESSION['phantom_admin'] = true;
+        $_SESSION['zentrix_admin'] = true;
     } else {
         $error = 'Incorrect password';
     }
 }
 
 if (isset($_GET['logout'])) {
-    unset($_SESSION['phantom_admin']);
+    unset($_SESSION['zentrix_admin']);
     header('Location: admin.php');
     exit;
 }
 
-if (empty($_SESSION['phantom_admin'])) {
+if (empty($_SESSION['zentrix_admin'])) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phantom Admin</title>
+    <title>ZENTRIX Admin</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="assets/js/theme.js"></script>
     <style>
@@ -60,7 +60,7 @@ if (empty($_SESSION['phantom_admin'])) {
 <body>
     <div class="bg-grid"></div>
     <div class="card login-card">
-        <h2 style="text-align:center; margin-bottom: 8px;">👻 Phantom</h2>
+        <h2 style="text-align:center; margin-bottom: 8px;">◈ ZENTRIX</h2>
         <p style="text-align:center; color: var(--text-muted); margin-bottom: 28px; font-size: 0.95rem;">Admin Access</p>
         
         <?php if (!empty($error)): ?>
@@ -117,7 +117,7 @@ $latestHits = array_slice($latestHits, 0, 8);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phantom Admin Dashboard</title>
+    <title>ZENTRIX Admin Dashboard</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="assets/js/theme.js"></script>
     <style>
@@ -198,8 +198,8 @@ $latestHits = array_slice($latestHits, 0, 8);
 
     <header class="topbar">
         <div class="logo">
-            <span class="ghost">👻</span>
-            <span class="name">Phantom Admin</span>
+            <span class="ghost">◈</span>
+            <span class="name">ZENTRIX Admin</span>
         </div>
         <div class="top-actions">
             <button id="themeToggle" class="theme-toggle" title="Toggle theme">☀️</button>
