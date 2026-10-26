@@ -20,7 +20,8 @@ $domain = rtrim($config['domain'], '/');
             <span class="ghost">👻</span>
             <span class="name">Phantom</span>
         </div>
-        <nav>
+        <nav style="display:flex; align-items:center; gap:16px;">
+            <button id="themeToggle" class="theme-toggle" title="Toggle theme">☀️</button>
             <a href="liveview.php">Live View</a>
             <a href="admin.php">Admin</a>
         </nav>
@@ -69,5 +70,6 @@ $domain = rtrim($config['domain'], '/');
         const DOMAIN = <?= json_encode($domain) ?>;
     </script>
     <script src="assets/js/homepage.js"></script>
+    <script src="assets/js/theme.js"></script>
 </body>
 </html>
