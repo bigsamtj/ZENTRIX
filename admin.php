@@ -1,7 +1,7 @@
 <?php
 /**
  * Phantom v3 – Admin Dashboard
- * Single-user, in-house intelligence control panel
+ * Single-user + Dark/Light Mode
  */
 
 session_start();
@@ -42,6 +42,7 @@ if (empty($_SESSION['phantom_admin'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phantom Admin</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/theme.js"></script>
     <style>
         body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
         .login-card { width: 100%; max-width: 380px; }
@@ -97,7 +98,6 @@ foreach ($files as $file) {
     }
 }
 
-// Sort latest hits by time descending
 usort($latestHits, function($a, $b) {
     return strcmp($b['time'], $a['time']);
 });
@@ -110,6 +110,7 @@ $latestHits = array_slice($latestHits, 0, 8);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phantom Admin Dashboard</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/theme.js"></script>
     <style>
         .stats-grid {
             display: grid;
@@ -192,6 +193,7 @@ $latestHits = array_slice($latestHits, 0, 8);
             <span class="name">Phantom Admin</span>
         </div>
         <div class="top-actions">
+            <button id="themeToggle" class="theme-toggle" title="Toggle theme">☀️</button>
             <a href="index.php" class="btn-secondary" style="padding: 8px 14px; font-size: 0.85rem;">Create Link</a>
             <a href="?logout=1" class="btn-secondary" style="padding: 8px 14px; font-size: 0.85rem;">Logout</a>
         </div>
