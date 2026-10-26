@@ -1,7 +1,7 @@
 <?php
 /**
  * Phantom v3 – Admin Dashboard
- * Single-user + Dark/Light Mode
+ * With photo count support
  */
 
 session_start();
@@ -14,6 +14,15 @@ if (isset($_GET['delete']) && !empty($_SESSION['phantom_admin'])) {
     if (file_exists($file)) {
         unlink($file);
     }
+
+    // Also delete related photos
+    $photoDir = __DIR__ . '/logs/photos';
+    if (is_dir($photoDir)) {
+        foreach (glob($photoDir . '/' . $delId . '_*.jpg') as $photo) {
+            @unlink($photo);
+        }
+    }
+
     header('Location: admin.php');
     exit;
 }
@@ -273,6 +282,7 @@ $latestHits = array_slice($latestHits, 0, 8);
                         <tr>
                             <th>Tracking ID</th>
                             <th>Hits</th>
+                            <th>Photos</th>
                             <th>Last Activity</th>
                             <th>Actions</th>
                         </tr>
@@ -283,10 +293,18 @@ $latestHits = array_slice($latestHits, 0, 8);
                             $data = json_decode(file_get_contents($file), true) ?: [];
                             $hits = count($data);
                             $lastTime = $hits > 0 ? ($data[count($data)-1]['time'] ?? '-') : '-';
+
+                            // Count photos
+                            $photoCount = 0;
+                            $photoDir = __DIR__ . '/logs/photos';
+                            if (is_dir($photoDir)) {
+                                $photoCount = count(glob($photoDir . '/' . $id . '_*.jpg'));
+                            }
                         ?>
                         <tr>
                             <td><code style="color: var(--success);"><?= htmlspecialchars($id) ?></code></td>
                             <td><?= $hits ?></td>
+                            <td><?= $photoCount ?></td>
                             <td><?= htmlspecialchars($lastTime) ?></td>
                             <td class="actions">
                                 <a href="liveview.php?id=<?= urlencode($id) ?>" class="btn-secondary" style="padding: 4px 10px;">Live View</a>
@@ -302,7 +320,7 @@ $latestHits = array_slice($latestHits, 0, 8);
 
     <script>
         function deleteLog(id) {
-            if (!confirm('Delete tracking ID "' + id + '" and all its logs?\nThis cannot be undone.')) return;
+            if (!confirm('Delete tracking ID "' + id + '" and all its logs + photos?\nThis cannot be undone.')) return;
 
             fetch('admin.php?delete=' + encodeURIComponent(id), {
                 method: 'POST'
