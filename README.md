@@ -1,4 +1,4 @@
-# 👻 Phantom
+# 👻 ZENTRIX
 
 **Silent. Precise. Yours.**
 
@@ -98,7 +98,7 @@ This tool is intended for **authorized assessment, research, and security testin
 The author is not responsible for any misuse.
 
 ---
-
+**Creator** - Samuel Adeyinka **[Big Sam]**
 **Phantom** — Built quietly. Cuts precisely.
 
 
