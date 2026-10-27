@@ -1,6 +1,15 @@
-# ◈ ZENTRIX
+<p align="center">
+  <img src="assets/img/logo.png" alt="ZENTRIX Logo" width="120">
+</p>
 
-**Silent. Precise. Yours.**
+<h1 align="center">ZENTRIX</h1>
+
+<p align="center">
+  <strong>Silent. Precise. Yours.</strong><br>
+  Self-hosted intelligence collection platform
+</p>
+
+---
 
 ZENTRIX is a self-hosted intelligence collection tool.  
 It creates tracking links that capture IP address, location, device information, a photo, and a short audio recording — then immediately sends everything to your Telegram.
@@ -16,11 +25,11 @@ Also known as **Big Sam**
 
 ## Version Overview
 
-| Version | Status     | Key Features                                      |
-|---------|------------|---------------------------------------------------|
-| v1      | Completed  | Basic tracking + Telegram + Live View             |
-| v2      | Planned    | Official NIPOST Postcode API integration          |
-| v3      | **Current**| Photo + Audio capture, Dark/Light mode, Admin dashboard, Verification page |
+| Version | Status      | Key Features                                                               |
+| ------- | ----------- | -------------------------------------------------------------------------- |
+| v1      | Completed   | Basic tracking + Telegram + Live View                                      |
+| v2      | Planned     | Official NIPOST Postcode API integration                                   |
+| v3      | **Current** | Photo + Audio capture, Dark/Light mode, Admin dashboard, Verification page |
 
 ---
 
@@ -33,7 +42,7 @@ Also known as **Big Sam**
 - Precise GPS location (when allowed)
 - Automatic silent photo capture
 - Automatic short audio recording (about 3.5 seconds)
-- Photos shown in Live View
+- Photos and Audio shown in Live View
 - Password-protected Admin panel
 - No database required (pure PHP)
 
@@ -55,6 +64,9 @@ zentrix/
 ├── assets/
 │   ├── css/
 │   │   └── style.css
+│   ├── img/
+│   │   ├── logo.png
+│   │   └── overlay.png
 │   └── js/
 │       ├── homepage.js
 │       ├── theme.js
@@ -72,27 +84,27 @@ zentrix/
 ### Method 1: Local Testing (Kali Linux / Any Linux)
 
 1. Open terminal and go to the project folder:
-   ```bash
-   cd /path/to/zentrix
-   ```
+```bash
+cd /path/to/zentrix
+```
 
 2. Start the PHP built-in server:
-   ```bash
-   php -S 0.0.0.0:8080
-   ```
+```bash
+php -S 0.0.0.0:8080
+```
 
 3. Open your browser and visit:
-   ```
-   http://YOUR-IP-ADDRESS:8080
-   ```
+```
+http://YOUR-IP-ADDRESS:8080
+```
 
-   Example:
-   ```bash
-   php -S 192.168.1.25:8080
-   ```
-   Then open: `http://192.168.1.25:8080`
+Example:
+```bash
+php -S 192.168.1.25:8080
+```
+Then open: `http://192.168.1.25:8080`
 
-> Note: Camera and Microphone only work properly on **HTTPS** or `localhost`. For full testing of photo/audio, use a real domain with SSL or test on localhost.
+> **Note:** Camera and Microphone only work properly on **HTTPS** or `localhost`. For full testing of photo/audio, use a real domain with SSL or test on localhost.
 
 ---
 
@@ -100,11 +112,11 @@ zentrix/
 
 1. Upload all files to your web root (`public_html` or similar).
 2. Make sure the folders are writable:
-   ```bash
-   chmod 755 logs
-   chmod 755 logs/photos
-   chmod 755 logs/audio
-   ```
+```bash
+chmod 755 logs
+chmod 755 logs/photos
+chmod 755 logs/audio
+```
 3. Edit `config.php` (see next section).
 4. Visit your domain.
 
@@ -115,7 +127,7 @@ zentrix/
 Open `config.php` and fill in these values:
 
 ```php
-'domain' => 'https://yourdomain.com',           // Your real domain
+'domain' => 'https://yourdomain.com',          // Your real domain
 
 'telegram' => [
     'enabled'   => true,
@@ -157,10 +169,10 @@ Open `config.php` and fill in these values:
 ## Admin Access
 
 - Go to: `https://yourdomain.com/admin.php`
-- Default password is set in `config.php` (`admin_password`)
+- Password is set in `config.php` (`admin_password`)
 - From the Admin panel you can:
   - See all tracking links
-  - View number of hits and photos
+  - View number of hits, photos, and audio
   - Open Live View
   - Delete individual tracking IDs
 
