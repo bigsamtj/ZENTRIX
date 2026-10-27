@@ -1,4 +1,4 @@
-/* Phantom v3 – Dark + Light Mode */
+/* ZENTRIX v3 – Dark + Light Mode + Overlay + Logo */
 
 :root {
     /* Dark Mode (default) */
@@ -46,25 +46,24 @@ body {
     transition: background 0.25s ease, color 0.25s ease;
 }
 
-/* Subtle grid background */
+/* ===== Background Overlay ===== */
 .bg-grid {
     position: fixed;
     inset: 0;
-    background-image:
-        linear-gradient(rgba(124, 92, 252, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(124, 92, 252, 0.03) 1px, transparent 1px);
-    background-size: 48px 48px;
+    background-image: url('../img/overlay.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.08;               /* Atur antara 0.05 - 0.12 sesuai selera */
     pointer-events: none;
     z-index: 0;
 }
 
 [data-theme="light"] .bg-grid {
-    background-image:
-        linear-gradient(rgba(109, 74, 239, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(109, 74, 239, 0.04) 1px, transparent 1px);
+    opacity: 0.05;
 }
 
-/* Top bar */
+/* ===== Top bar ===== */
 .topbar {
     position: relative;
     z-index: 10;
@@ -75,6 +74,7 @@ body {
     border-bottom: 1px solid var(--border);
 }
 
+/* ===== Logo ===== */
 .logo {
     display: flex;
     align-items: center;
@@ -84,8 +84,10 @@ body {
     letter-spacing: -0.02em;
 }
 
-.logo .ghost {
-    font-size: 1.5rem;
+.logo img {
+    height: 32px;
+    width: auto;
+    display: block;
 }
 
 .logo .name {
@@ -433,5 +435,8 @@ details pre {
     }
     .card {
         padding: 22px;
+    }
+    .logo img {
+        height: 28px;
     }
 }
