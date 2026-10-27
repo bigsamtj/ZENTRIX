@@ -123,7 +123,7 @@ if (is_dir($audioDir)) {
 
     <header class="topbar">
         <div class="logo">
-            <span class="ghost">◈</span>
+            <img src="assets/img/logo.png" alt="ZENTRIX Logo">
             <span class="name">ZENTRIX Live</span>
         </div>
         <div style="display:flex; gap:12px; align-items:center;">
