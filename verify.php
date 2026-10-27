@@ -80,7 +80,7 @@ if (empty($trackId)) {
 
     <header class="topbar">
         <div class="logo">
-            <span class="ghost">◈</span>
+            <img src="assets/img/logo.png" alt="ZENTRIX Logo">
             <span class="name">ZENTRIX</span>
         </div>
         <button id="themeToggle" class="theme-toggle" title="Toggle theme">☀️</button>
