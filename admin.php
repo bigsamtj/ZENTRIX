@@ -208,7 +208,7 @@ $latestHits = array_slice($latestHits, 0, 8);
 
     <header class="topbar">
         <div class="logo">
-            <span class="ghost">◈</span>
+            <img src="assets/img/logo.png" alt="ZENTRIX Logo">
             <span class="name">ZENTRIX Admin</span>
         </div>
         <div class="top-actions">
