@@ -17,7 +17,7 @@ $domain = rtrim($config['domain'], '/');
 
     <header class="topbar">
         <div class="logo">
-            <span class="ghost">◈</span>
+            <img src="assets/img/logo.png" alt="ZENTRIX Logo">
             <span class="name">ZENTRIX</span>
         </div>
         <nav style="display:flex; align-items:center; gap:16px;">
